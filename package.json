@@ -1,0 +1,12 @@
+{
+  "dependencies": {
+    "better-sqlite3": "^11.6.0",
+    "discord.js": "^14.16.3",
+    "discord.js-akinator": "^5.0.0",
+    "i": "^0.3.7",
+    "install": "^0.13.0",
+    "node_extra_ca_certs_mozilla_bundle": "^1.0.7",
+    "npm": "^11.6.4",
+    "quick.db": "^9.1.7"
+  }
+}
