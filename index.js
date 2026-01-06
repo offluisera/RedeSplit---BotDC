@@ -248,6 +248,69 @@ require('./Handler')(client)
 
 client.login(config.token)
 
+// ========================================
+// SISTEMA DE RECUPERAÇÃO DE SENHA (TASK)
+// ========================================
+const db_mysql = require('./database.js');
+
+setInterval(async () => {
+    try {
+        // Busca códigos pendentes
+        const [codes] = await db_mysql.query(
+            `SELECT * FROM rs_discord_recovery_queue WHERE sent = 0 LIMIT 5`
+        );
+
+        for (const row of codes) {
+            try {
+                const user = await client.users.fetch(row.discord_id);
+
+                const embed = new Discord.EmbedBuilder()
+                    .setColor("#fcba03")
+                    .setTitle("🔐 Recuperação de Senha")
+                    .setDescription(`Olá! Você solicitou recuperação de senha para sua conta **Minecraft**.`)
+                    .addFields(
+                        {
+                            name: "👤 Jogador",
+                            value: `\`${row.player_name}\``,
+                            inline: true
+                        },
+                        {
+                            name: "🔑 Código",
+                            value: `\`${row.recovery_code}\``,
+                            inline: true
+                        }
+                    )
+                    .addFields({
+                        name: "📋 Como usar?",
+                        value: "Use este comando no **Minecraft**:\n" +
+                               `\`\`\`/recovery ${row.recovery_code} <nova_senha>\`\`\`\n` +
+                               "**Exemplo:** `/recovery ${row.recovery_code} MinhaSenh@123`"
+                    })
+                    .setFooter({ text: "⚠️ Este código expira em 5 minutos!" })
+                    .setTimestamp();
+
+                await user.send({ embeds: [embed] });
+
+                // Marca como enviado
+                await db_mysql.query(
+                    `UPDATE rs_discord_recovery_queue SET sent = 1 WHERE id = ?`,
+                    [row.id]
+                );
+
+                console.log(`✅ [Recovery] Código enviado para ${row.player_name}`);
+
+            } catch (err) {
+                console.error(`❌ [Recovery] Erro ao enviar para ${row.discord_id}:`, err.message);
+            }
+        }
+
+    } catch (error) {
+        console.error("Erro no sistema de recuperação:", error);
+    }
+}, 5000); // Verifica a cada 5 segundos
+
+console.log("✅ - Sistema de Recuperação de Senha ativado!");
+
 fs.readdir('./Events', (err, file) => {
     file.forEach(event => {
         require(`./Events/${event}`)
